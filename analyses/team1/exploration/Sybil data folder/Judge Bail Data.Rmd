@@ -100,10 +100,20 @@ completerecords$year <- as.factor(completerecords$year)
 is.factor(completerecords$action_type_name)
 is.factor(completerecords$year)
 ```
+# Suggestion: additional filtering to reduce data size
+If all the plots will involve selecting a judge, then we are not using the rows without a Judge.
+We can pre-filter out those rows and make operations on the data faster.
+
+```{r}
+filter_completerecords <- completerecords %>% 
+  filter(Judge != "NA NA")
+saveRDS(filter_completerecords, file = "new_bail_data.rds")
+```
 
 ```{r}
 saveRDS(completerecords, file = "new_bail_data.rds")
 ```
+
 
 
 #Judge Marsha Neifield
@@ -204,7 +214,8 @@ filter(factor(Judge) ==  "Joseph O'Neill" & year == "2009-2010")
 
 JO3 <- ggplot(data = plot3JO, aes(x = factor(month), y = total_amount, fill = factor(race))) +
    coord_flip() +
-  geom_col(position="dodge", color="black") +
+  # geom_col(position="dodge", color="black") +
+  geom_point(pch = 21, position = position_jitterdodge()) +
    facet_wrap(~action_type_name) +
   labs(title = "Judge:Joseph O'Neill 2009-2010", x = "Season", y = "Bail Amount")
 
