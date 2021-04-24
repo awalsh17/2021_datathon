@@ -52,8 +52,14 @@ disposition %>% group_by(sentence_type) %>%
   tally()
 
 # i looked at the disposition data to look at the relation of race & sentence received for the different grade of offenses. 
+# Alice suggestion - reduce to variables you will use later and only na.omit those
+disposition <- disposition %>% 
+  select(docket_id, sentence_type, grade) %>% 
+  na.omit()
 
-disposition <- disposition %>% na.omit()
+# Alice suggestion - now we can check if we have multiple rows for a given docket_id
+nrow(disposition) == n_distinct(disposition$docket_id)
+# We have multiple.
 
 # select the variables that we will use from the details dataset (this dataset contains the race variable that i would use in the plot)
 
@@ -62,7 +68,8 @@ details_sel <- details [c("docket_id", "gender","race", "municipality__name", "m
 # join the two data frames
 
 dispo_det <- inner_join(disposition, details_sel, by = "docket_id")%>% 
-  distinct(docket_id, .keep_all = TRUE)
+  # Alice suggestion - I think it is ok to have multiple rows per docket_id but we can have unique for the sentence_type and grade
+  distinct(docket_id, sentence_type, grade, .keep_all = TRUE)
 
 # ALICE: I saved this dispo_det out for the app
 saveRDS(dispo_det, '../2021_datathon_dashboard/data/kk_dispo_det.Rds')
@@ -89,4 +96,25 @@ p <- ggplot(perct) +
   facet_wrap(vars(sentence_type))
 
 ggsave(p, filename = "plot1.png", height = 6, width = 6)
+
+
+# Alice suggestion - instead of plotting the percent of each race/grade within a sentence type...
+# You could plot the percent of sentence type within each race/grade
+perct <- dispo_race %>% 
+  add_count(race, grade, name = "sentence_ct") %>% 
+  count(race, grade, sentence_type,sentence_ct, sort = TRUE) %>% 
+  mutate(pct_sentence = n /sentence_ct) 
+
+p <- ggplot(perct) +
+  aes(x = grade, fill = race, weight = pct_sentence) +
+  geom_bar(position = "dodge") +
+  scale_fill_hue() +
+  labs(y = "percentage") +
+  theme_light() + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  coord_flip() +
+  facet_wrap(vars(sentence_type))
+
+ggsave(p, filename = "plot2.png", height = 6, width = 6)
+
 
